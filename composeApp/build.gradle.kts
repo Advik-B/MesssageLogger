@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    kotlin("kapt")
 }
 
 kotlin {
@@ -19,6 +20,12 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation("androidx.room:room-runtime:2.5.0")
+            implementation("androidx.room:room-ktx:2.5.0")
+            implementation("androidx.navigation:navigation-compose:2.7.1")
+            implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -65,5 +72,6 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    kapt("androidx.room:room-compiler:2.5.0")
 }
 
