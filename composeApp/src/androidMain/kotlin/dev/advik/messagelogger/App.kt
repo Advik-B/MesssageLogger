@@ -4,7 +4,9 @@ import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,8 +18,12 @@ import dev.advik.messagelogger.service.WhatsAppImageObserverService
 import dev.advik.messagelogger.ui.screen.NotificationScreen
 import dev.advik.messagelogger.ui.screen.PermissionScreen
 import dev.advik.messagelogger.ui.screen.WhatsAppImageScreen
+import dev.advik.messagelogger.ui.screen.MessageRecoveryScreen
+import dev.advik.messagelogger.ui.screen.SettingsScreen
 import dev.advik.messagelogger.ui.viewmodel.NotificationViewModel
 import dev.advik.messagelogger.ui.viewmodel.WhatsAppImageViewModel
+import dev.advik.messagelogger.ui.viewmodel.MessageRecoveryViewModel
+import dev.advik.messagelogger.ui.viewmodel.SettingsViewModel
 import dev.advik.messagelogger.util.DemoData
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +56,7 @@ fun App() {
 private fun MainNavigation(
     navController: androidx.navigation.NavHostController
 ) {
-    var currentRoute by remember { mutableStateOf("notifications") }
+    var currentRoute by remember { mutableStateOf("recovery") }
 
     Scaffold(
         topBar = {
@@ -58,8 +64,10 @@ private fun MainNavigation(
                 title = {
                     Text(
                         text = when (currentRoute) {
-                            "notifications" -> "Message Logger"
+                            "recovery" -> "Message Recovery"
+                            "notifications" -> "All Notifications"
                             "images" -> "WhatsApp Images"
+                            "settings" -> "Settings"
                             else -> "Message Logger"
                         }
                     )
@@ -72,8 +80,19 @@ private fun MainNavigation(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
+                    icon = { Icon(Icons.Default.Message, contentDescription = null) },
+                    label = { Text("Recovery") },
+                    selected = currentRoute == "recovery",
+                    onClick = {
+                        currentRoute = "recovery"
+                        navController.navigate("recovery") {
+                            popUpTo("recovery") { inclusive = true }
+                        }
+                    }
+                )
+                NavigationBarItem(
                     icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
-                    label = { Text("Notifications") },
+                    label = { Text("All Notifications") },
                     selected = currentRoute == "notifications",
                     onClick = {
                         currentRoute = "notifications"
@@ -93,14 +112,32 @@ private fun MainNavigation(
                         }
                     }
                 )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                    label = { Text("Settings") },
+                    selected = currentRoute == "settings",
+                    onClick = {
+                        currentRoute = "settings"
+                        navController.navigate("settings") {
+                            popUpTo("settings") { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "notifications",
+            startDestination = "recovery",
             modifier = Modifier.padding(paddingValues)
         ) {
+            composable("recovery") {
+                val viewModel = viewModel<MessageRecoveryViewModel> {
+                    MessageRecoveryViewModel()
+                }
+                MessageRecoveryScreen(viewModel = viewModel)
+            }
+            
             composable("notifications") {
                 val viewModel = viewModel<NotificationViewModel> {
                     NotificationViewModel()
@@ -113,6 +150,13 @@ private fun MainNavigation(
                     WhatsAppImageViewModel()
                 }
                 WhatsAppImageScreen(viewModel = viewModel)
+            }
+            
+            composable("settings") {
+                val viewModel = viewModel<SettingsViewModel> {
+                    SettingsViewModel()
+                }
+                SettingsScreen(viewModel = viewModel)
             }
         }
     }
