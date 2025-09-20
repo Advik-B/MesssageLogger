@@ -4,7 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -19,6 +19,7 @@ import dev.advik.messagelogger.ui.screen.NotificationScreen
 import dev.advik.messagelogger.ui.screen.PermissionScreen
 import dev.advik.messagelogger.ui.screen.WhatsAppImageScreen
 import dev.advik.messagelogger.ui.screen.MessageRecoveryScreen
+import dev.advik.messagelogger.ui.screen.DashboardScreen
 import dev.advik.messagelogger.ui.screen.SettingsScreen
 import dev.advik.messagelogger.ui.viewmodel.NotificationViewModel
 import dev.advik.messagelogger.ui.viewmodel.WhatsAppImageViewModel
@@ -56,7 +57,7 @@ fun App() {
 private fun MainNavigation(
     navController: androidx.navigation.NavHostController
 ) {
-    var currentRoute by remember { mutableStateOf("recovery") }
+    var currentRoute by remember { mutableStateOf("dashboard") }
 
     Scaffold(
         topBar = {
@@ -64,6 +65,7 @@ private fun MainNavigation(
                 title = {
                     Text(
                         text = when (currentRoute) {
+                            "dashboard" -> "Dashboard"
                             "recovery" -> "Message Recovery"
                             "notifications" -> "All Notifications"
                             "images" -> "WhatsApp Images"
@@ -80,24 +82,24 @@ private fun MainNavigation(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Message, contentDescription = null) },
+                    icon = { Icon(Icons.Default.Dashboard, contentDescription = null) },
+                    label = { Text("Dashboard") },
+                    selected = currentRoute == "dashboard",
+                    onClick = {
+                        currentRoute = "dashboard"
+                        navController.navigate("dashboard") {
+                            popUpTo("dashboard") { inclusive = true }
+                        }
+                    }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
                     label = { Text("Recovery") },
                     selected = currentRoute == "recovery",
                     onClick = {
                         currentRoute = "recovery"
                         navController.navigate("recovery") {
                             popUpTo("recovery") { inclusive = true }
-                        }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
-                    label = { Text("All Notifications") },
-                    selected = currentRoute == "notifications",
-                    onClick = {
-                        currentRoute = "notifications"
-                        navController.navigate("notifications") {
-                            popUpTo("notifications") { inclusive = true }
                         }
                     }
                 )
@@ -128,9 +130,16 @@ private fun MainNavigation(
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "recovery",
+            startDestination = "dashboard",
             modifier = Modifier.padding(paddingValues)
         ) {
+            composable("dashboard") {
+                val viewModel = viewModel<MessageRecoveryViewModel> {
+                    MessageRecoveryViewModel()
+                }
+                DashboardScreen(viewModel = viewModel)
+            }
+            
             composable("recovery") {
                 val viewModel = viewModel<MessageRecoveryViewModel> {
                     MessageRecoveryViewModel()
