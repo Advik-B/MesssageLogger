@@ -10,7 +10,7 @@ import android.graphics.drawable.Drawable
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import dev.advik.messagelogger.data.SimpleDataStore
+import dev.advik.messagelogger.data.repository.MessageLoggerRepository
 import dev.advik.messagelogger.data.SupportedPlatforms
 import dev.advik.messagelogger.data.entity.NotificationEntity
 import dev.advik.messagelogger.data.entity.MessageEntity
@@ -28,7 +28,7 @@ import java.io.FileOutputStream
  */
 class NotificationListenerService : NotificationListenerService() {
 
-    private val dataStore = SimpleDataStore.getInstance()
+    private val repository by lazy { MessageLoggerRepository.getInstance(this) }
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private var messageIdCounter = 1L // Simple ID counter
 
@@ -62,7 +62,7 @@ class NotificationListenerService : NotificationListenerService() {
                 try {
                     // Detect potential message deletion
                     handlePotentialDeletion(statusBarNotification)
-                    dataStore.removeNotificationByKey(statusBarNotification.key)
+                    repository.deleteNotificationByKey(statusBarNotification.key)
                     Log.d(TAG, "Removed notification: ${statusBarNotification.key}")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error removing notification", e)
@@ -102,7 +102,7 @@ class NotificationListenerService : NotificationListenerService() {
             key = key
         )
         
-        dataStore.addMessage(messageEntity)
+        repository.insertMessage(messageEntity)
         Log.d(TAG, "Processed message from ${platformConfig.displayName}: $sender")
     }
     
@@ -205,7 +205,7 @@ class NotificationListenerService : NotificationListenerService() {
             key = key
         )
 
-        dataStore.addNotification(notificationEntity)
+        repository.insertNotification(notificationEntity)
         Log.d(TAG, "Logged notification from $appName: $title")
     }
 
