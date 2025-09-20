@@ -4,6 +4,11 @@ import androidx.room.*
 import dev.advik.messagelogger.data.database.entity.NotificationDatabaseEntity
 import kotlinx.coroutines.flow.Flow
 
+data class AppInfo(
+    val packageName: String,
+    val appName: String
+)
+
 @Dao
 interface NotificationDao {
     
@@ -14,7 +19,7 @@ interface NotificationDao {
     fun getNotificationsByPackage(packageName: String): Flow<List<NotificationDatabaseEntity>>
     
     @Query("SELECT DISTINCT packageName, appName FROM notifications ORDER BY appName")
-    fun getDistinctApps(): Flow<Map<String, String>>
+    fun getDistinctApps(): Flow<List<AppInfo>>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNotification(notification: NotificationDatabaseEntity): Long
