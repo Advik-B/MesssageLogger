@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -31,6 +32,10 @@ kotlin {
             
             // Core Android libraries
             implementation(libs.androidx.core.ktx)
+            
+            // Room Database
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.room.ktx)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -51,6 +56,7 @@ kotlin {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    add("kspAndroid", libs.androidx.room.compiler)
 }
 
 android {

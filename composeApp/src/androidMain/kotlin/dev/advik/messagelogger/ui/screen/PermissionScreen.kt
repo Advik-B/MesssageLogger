@@ -15,10 +15,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
@@ -29,37 +32,59 @@ fun PermissionScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Storage permissions
-    val storagePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        listOf(
-            android.Manifest.permission.READ_MEDIA_IMAGES,
-            android.Manifest.permission.READ_EXTERNAL_STORAGE
-        )
-    } else {
-        listOf(
-            android.Manifest.permission.READ_EXTERNAL_STORAGE,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )
+    // Storage permissions - properly configured for different Android versions
+    val storagePermissions = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
+            listOf(android.Manifest.permission.READ_MEDIA_IMAGES)
+        }
+        else -> {
+            listOf(
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        }
     }
 
     val storagePermissionsState = rememberMultiplePermissionsState(storagePermissions)
 
-    // Check notification listener permission
-    val notificationListenerEnabled = remember {
+    // State for dynamic permission checking
+    var notificationListenerEnabled by remember { mutableStateOf(false) }
+    var hasManageExternalStorage by remember { mutableStateOf(false) }
+
+    // Function to check permissions
+    fun checkPermissions() {
+        // Check notification listener permission
         val enabledListeners = Settings.Secure.getString(
             context.contentResolver,
             "enabled_notification_listeners"
         )
-        enabledListeners?.contains(context.packageName) == true
-    }
+        notificationListenerEnabled = enabledListeners?.contains(context.packageName) == true
 
-    // Check manage external storage permission for Android 11+
-    val hasManageExternalStorage = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        // Check manage external storage permission for Android 11+
+        hasManageExternalStorage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
         } else {
             true // Not needed for older versions
+        }
+    }
+
+    // Check permissions initially
+    LaunchedEffect(Unit) {
+        checkPermissions()
+    }
+
+    // Re-check permissions when the app resumes
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                checkPermissions()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -139,7 +164,21 @@ fun PermissionScreen(
                     icon = Icons.Default.Storage,
                     isGranted = storagePermissionsState.allPermissionsGranted,
                     onGrantClick = {
-                        storagePermissionsState.launchMultiplePermissionRequest()
+                        try {
+                            android.util.Log.d("PermissionScreen", "Launching storage permission request")
+                            storagePermissionsState.launchMultiplePermissionRequest()
+                        } catch (e: Exception) {
+                            android.util.Log.e("PermissionScreen", "Failed to launch permission request", e)
+                            // Fallback: try to open app settings
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.fromParts("package", context.packageName, null)
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (settingsException: Exception) {
+                                android.util.Log.e("PermissionScreen", "Failed to open app settings", settingsException)
+                            }
+                        }
                     }
                 )
 
