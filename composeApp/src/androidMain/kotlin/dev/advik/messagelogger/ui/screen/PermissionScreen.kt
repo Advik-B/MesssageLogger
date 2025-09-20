@@ -34,17 +34,17 @@ fun PermissionScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Storage permissions
-    val storagePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        listOf(
-            android.Manifest.permission.READ_MEDIA_IMAGES,
-            android.Manifest.permission.READ_EXTERNAL_STORAGE
-        )
-    } else {
-        listOf(
-            android.Manifest.permission.READ_EXTERNAL_STORAGE,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )
+    // Storage permissions - properly configured for different Android versions
+    val storagePermissions = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
+            listOf(android.Manifest.permission.READ_MEDIA_IMAGES)
+        }
+        else -> {
+            listOf(
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        }
     }
 
     val storagePermissionsState = rememberMultiplePermissionsState(storagePermissions)
@@ -164,7 +164,21 @@ fun PermissionScreen(
                     icon = Icons.Default.Storage,
                     isGranted = storagePermissionsState.allPermissionsGranted,
                     onGrantClick = {
-                        storagePermissionsState.launchMultiplePermissionRequest()
+                        try {
+                            android.util.Log.d("PermissionScreen", "Launching storage permission request")
+                            storagePermissionsState.launchMultiplePermissionRequest()
+                        } catch (e: Exception) {
+                            android.util.Log.e("PermissionScreen", "Failed to launch permission request", e)
+                            // Fallback: try to open app settings
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.fromParts("package", context.packageName, null)
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (settingsException: Exception) {
+                                android.util.Log.e("PermissionScreen", "Failed to open app settings", settingsException)
+                            }
+                        }
                     }
                 )
 
