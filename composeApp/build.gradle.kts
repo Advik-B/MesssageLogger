@@ -19,6 +19,18 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation("androidx.compose.material:material-icons-extended:1.6.0")
+            
+            // Navigation
+            implementation(libs.androidx.navigation.compose)
+            
+            // Permissions
+            implementation(libs.accompanist.permissions)
+            
+            // Coroutines
+            implementation(libs.kotlinx.coroutines.android)
+            
+            // Core Android libraries
+            implementation(libs.androidx.core.ktx)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -29,6 +41,7 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
