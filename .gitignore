@@ -31,3 +31,4 @@ Thumbs.db
 # Build outputs
 /captures
 /composeApp/build/
+local.properties
