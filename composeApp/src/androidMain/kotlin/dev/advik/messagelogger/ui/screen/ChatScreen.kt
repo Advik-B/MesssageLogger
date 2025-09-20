@@ -50,6 +50,7 @@ fun ChatScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatListPanel(
     chatGroups: List<ChatGroup>,
@@ -84,6 +85,7 @@ private fun ChatListPanel(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatGroupItem(
     chatGroup: ChatGroup,
@@ -156,6 +158,7 @@ private fun ChatGroupItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatMessagesPanel(
     chatGroup: ChatGroup,

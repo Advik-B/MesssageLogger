@@ -143,8 +143,9 @@ private fun MainNavigation(
             }
             
             composable("chat") {
+                val context = LocalContext.current
                 val viewModel = viewModel<ChatViewModel> {
-                    ChatViewModel(application = LocalContext.current.applicationContext as android.app.Application)
+                    ChatViewModel(application = context.applicationContext as android.app.Application)
                 }
                 ChatScreen(viewModel = viewModel)
             }
