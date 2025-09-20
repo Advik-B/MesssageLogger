@@ -1,17 +1,16 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
 }
 
 kotlin {
     androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
         }
     }
     
@@ -19,6 +18,7 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation("androidx.compose.material:material-icons-extended:1.6.0")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -34,6 +34,10 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+}
+
+dependencies {
+    debugImplementation(compose.uiTooling)
 }
 
 android {
@@ -62,8 +66,3 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-
-dependencies {
-    debugImplementation(compose.uiTooling)
-}
-
