@@ -18,17 +18,16 @@ import androidx.navigation.compose.*
 import dev.advik.messagelogger.service.WhatsAppImageObserverService
 import dev.advik.messagelogger.ui.screen.NotificationScreen
 import dev.advik.messagelogger.ui.screen.PermissionScreen
-import dev.advik.messagelogger.ui.screen.WhatsAppImageScreen
 import dev.advik.messagelogger.ui.screen.MessageRecoveryScreen
 import dev.advik.messagelogger.ui.screen.ChatScreen
 import dev.advik.messagelogger.ui.screen.DashboardScreen
 import dev.advik.messagelogger.ui.screen.SettingsScreen
+import dev.advik.messagelogger.ui.screen.WhatsAppImageScreen
 import dev.advik.messagelogger.ui.viewmodel.NotificationViewModel
 import dev.advik.messagelogger.ui.viewmodel.WhatsAppImageViewModel
 import dev.advik.messagelogger.ui.viewmodel.MessageRecoveryViewModel
 import dev.advik.messagelogger.ui.viewmodel.ChatViewModel
 import dev.advik.messagelogger.ui.viewmodel.SettingsViewModel
-import dev.advik.messagelogger.util.DemoData
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,8 +41,6 @@ fun App() {
             PermissionScreen(
                 onPermissionsGranted = {
                     showPermissionScreen = false
-                    // Add demo data for testing
-                    DemoData.addSampleData()
                     // Start WhatsApp monitoring service
                     val intent = Intent(context, WhatsAppImageObserverService::class.java)
                     context.startService(intent)
@@ -63,24 +60,6 @@ private fun MainNavigation(
     var currentRoute by remember { mutableStateOf("dashboard") }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = when (currentRoute) {
-                            "dashboard" -> "Dashboard"
-                            "chat" -> "Conversations"
-                            "images" -> "WhatsApp Images"
-                            "settings" -> "Settings"
-                            else -> "Message Logger"
-                        }
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
-        },
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
@@ -102,6 +81,17 @@ private fun MainNavigation(
                         currentRoute = "chat"
                         navController.navigate("chat") {
                             popUpTo("chat") { inclusive = true }
+                        }
+                    }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
+                    label = { Text("All Apps") },
+                    selected = currentRoute == "notifications",
+                    onClick = {
+                        currentRoute = "notifications"
+                        navController.navigate("notifications") {
+                            popUpTo("notifications") { inclusive = true }
                         }
                     }
                 )
@@ -136,8 +126,9 @@ private fun MainNavigation(
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("dashboard") {
+                val context = LocalContext.current
                 val viewModel = viewModel<MessageRecoveryViewModel> {
-                    MessageRecoveryViewModel()
+                    MessageRecoveryViewModel(application = context.applicationContext as android.app.Application)
                 }
                 DashboardScreen(viewModel = viewModel)
             }
@@ -150,9 +141,18 @@ private fun MainNavigation(
                 ChatScreen(viewModel = viewModel)
             }
             
+            composable("notifications") {
+                val context = LocalContext.current
+                val viewModel = viewModel<NotificationViewModel> {
+                    NotificationViewModel(application = context.applicationContext as android.app.Application)
+                }
+                NotificationScreen(viewModel = viewModel)
+            }
+            
             composable("images") {
+                val context = LocalContext.current
                 val viewModel = viewModel<WhatsAppImageViewModel> {
-                    WhatsAppImageViewModel()
+                    WhatsAppImageViewModel(application = context.applicationContext as android.app.Application)
                 }
                 WhatsAppImageScreen(viewModel = viewModel)
             }

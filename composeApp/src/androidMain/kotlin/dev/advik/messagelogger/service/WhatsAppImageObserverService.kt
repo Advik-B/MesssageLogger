@@ -6,7 +6,7 @@ import android.os.Environment
 import android.os.FileObserver
 import android.os.IBinder
 import android.util.Log
-import dev.advik.messagelogger.data.SimpleDataStore
+import dev.advik.messagelogger.data.repository.MessageLoggerRepository
 import dev.advik.messagelogger.data.entity.WhatsAppImageEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,10 +17,11 @@ import java.io.FileOutputStream
 
 /**
  * Service to monitor WhatsApp images folder for changes
+ * Automatically backs up detected images and sends notifications on deletions
  */
 class WhatsAppImageObserverService : Service() {
 
-    private val dataStore = SimpleDataStore.getInstance()
+    private lateinit var repository: MessageLoggerRepository
     private var fileObserver: FileObserver? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
@@ -28,9 +29,17 @@ class WhatsAppImageObserverService : Service() {
         Environment.getExternalStorageDirectory(),
         "WhatsApp/Media/WhatsApp Images"
     ).absolutePath
+    
+    private val backupDirectory by lazy {
+        File(getExternalFilesDir(null), "whatsapp_backups").apply {
+            mkdirs()
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
+        repository = MessageLoggerRepository.getInstance(this)
+        DeletedMediaNotificationService.initialize(this)
         Log.d(TAG, "WhatsAppImageObserverService created")
     }
 
@@ -100,34 +109,30 @@ class WhatsAppImageObserverService : Service() {
                 return
             }
 
-            // Check if we already have this file (simple check by filename)
-            val existingImages = dataStore.whatsAppImages.value
-            if (existingImages.any { it.originalFileName == fileName }) {
+            // Check if we already have this file
+            val existingImages = repository.getAllImages().value
+            if (existingImages.any { it.originalFileName == fileName && !it.isDeleted }) {
                 Log.d(TAG, "File already exists in database: $fileName")
                 return
             }
 
-            // Create backup directory if it doesn't exist
-            val backupDir = File(filesDir, "WhatsAppBackup")
-            if (!backupDir.exists()) {
-                backupDir.mkdirs()
+            // Immediately backup the file
+            val backupFile = File(backupDirectory, fileName)
+            if (copyFile(originalFile, backupFile)) {
+                // Create database entry
+                val imageEntity = WhatsAppImageEntity(
+                    originalFileName = fileName,
+                    backupFilePath = backupFile.absolutePath,
+                    originalFilePath = originalFile.absolutePath,
+                    timestamp = System.currentTimeMillis(),
+                    fileSize = originalFile.length()
+                )
+
+                repository.insertImage(imageEntity)
+                Log.d(TAG, "Immediately backed up WhatsApp image: $fileName")
+            } else {
+                Log.e(TAG, "Failed to backup file: $fileName")
             }
-
-            // Copy file to internal storage
-            val backupFile = File(backupDir, fileName)
-            copyFile(originalFile, backupFile)
-
-            // Create database entry
-            val imageEntity = WhatsAppImageEntity(
-                originalFileName = fileName,
-                backupFilePath = backupFile.absolutePath,
-                originalFilePath = originalFile.absolutePath,
-                timestamp = System.currentTimeMillis(),
-                fileSize = originalFile.length()
-            )
-
-            dataStore.addWhatsAppImage(imageEntity)
-            Log.d(TAG, "Backed up WhatsApp image: $fileName")
 
         } catch (e: Exception) {
             Log.e(TAG, "Error handling file created: $fileName", e)
@@ -140,12 +145,19 @@ class WhatsAppImageObserverService : Service() {
                 return
             }
 
-            val existingImages = dataStore.whatsAppImages.value
-            val existingImage = existingImages.find { it.originalFileName == fileName && !it.isDeleted }
-            if (existingImage != null) {
-                dataStore.markImageAsDeleted(fileName, System.currentTimeMillis())
-                Log.d(TAG, "Marked WhatsApp image as deleted: $fileName")
-            }
+            // Mark the file as deleted in database and send notification
+            val currentTime = System.currentTimeMillis()
+            repository.markImageAsDeleted(fileName, currentTime)
+            
+            // Send notification about deleted media with backup available
+            DeletedMediaNotificationService.sendDeletedMediaNotification(
+                context = this@WhatsAppImageObserverService,
+                fileName = fileName,
+                mediaType = "Image",
+                appName = "WhatsApp"
+            )
+            
+            Log.d(TAG, "Marked WhatsApp image as deleted and sent notification: $fileName")
 
         } catch (e: Exception) {
             Log.e(TAG, "Error handling file deleted: $fileName", e)
@@ -157,11 +169,17 @@ class WhatsAppImageObserverService : Service() {
         return imageExtensions.any { fileName.lowercase().endsWith(it) }
     }
 
-    private fun copyFile(source: File, destination: File) {
-        FileInputStream(source).use { input ->
-            FileOutputStream(destination).use { output ->
-                input.copyTo(output)
+    private fun copyFile(source: File, destination: File): Boolean {
+        return try {
+            FileInputStream(source).use { input ->
+                FileOutputStream(destination).use { output ->
+                    input.copyTo(output)
+                }
             }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy file: ${source.name}", e)
+            false
         }
     }
 
