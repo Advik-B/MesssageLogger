@@ -1,10 +1,14 @@
 package dev.advik.messagelogger.ui.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,13 +29,22 @@ fun NotificationItem(
     notification: NotificationEntity,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    var isExpanded by remember { mutableStateOf(false) }
     val dateFormat = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
+
+    // Determine if content is long enough to benefit from expansion
+    val hasLongContent = notification.text.length > 100 || notification.title.length > 50
+    val shouldShowExpandIcon = hasLongContent && notification.text.isNotBlank()
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable { 
+                if (shouldShowExpandIcon) {
+                    isExpanded = !isExpanded 
+                }
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -68,8 +81,8 @@ fun NotificationItem(
                         text = notification.title,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                        overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
                     )
                 }
 
@@ -79,8 +92,8 @@ fun NotificationItem(
                         text = notification.text,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                        overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
                     )
                 }
 
@@ -92,6 +105,19 @@ fun NotificationItem(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
+            }
+            
+            // Expand/Collapse icon - only show if notification text is long enough to be truncated
+            if (shouldShowExpandIcon) {
+                IconButton(
+                    onClick = { isExpanded = !isExpanded }
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

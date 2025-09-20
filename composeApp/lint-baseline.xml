@@ -5,7 +5,7 @@
         id="ObsoleteLintCustomCheck"
         message="Library lint checks reference invalid APIs; these checks **will be skipped**!&#xA;&#xA;Lint found an issue registry (`androidx.compose.runtime.lint.RuntimeIssueRegistry`)&#xA;which contains some references to invalid API:&#xA;org.jetbrains.kotlin.analysis.api.session.KtAnalysisSessionProvider: org.jetbrains.kotlin.analysis.api.lifetime.KtLifetimeTokenFactory getTokenFactory()&#xA;(Referenced from androidx/compose/runtime/lint/AutoboxingStateCreationDetector.class)&#xA;&#xA;Therefore, this lint check library is **not** included&#xA;in analysis. This affects the following lint checks:&#xA;`AutoboxingStateValueProperty`&#xA;`AutoboxingStateCreation`&#xA;`CoroutineCreationDuringComposition`&#xA;`FlowOperatorInvokedInComposition`&#xA;`ComposableLambdaParameterNaming`&#xA;`ComposableLambdaParameterPosition`&#xA;`ComposableNaming`&#xA;`StateFlowValueCalledInComposition`&#xA;`CompositionLocalNaming`&#xA;`MutableCollectionMutableState`&#xA;`ProduceStateDoesNotAssignValue`&#xA;`RememberReturnType`&#xA;`OpaqueUnitKey`&#xA;`UnrememberedMutableState`&#xA;&#xA;To use this lint check, upgrade to a more recent version&#xA;of the library.">
         <location
-            file="$GRADLE_USER_HOME/caches/transforms-3/d23441d25eebf561400ab48d949c44e4/transformed/runtime-release/jars/lint.jar"/>
+            file="$GRADLE_USER_HOME/caches/transforms-3/4b3c3c51b0d525bc5f1a342e70c7024e/transformed/runtime-release/jars/lint.jar"/>
     </issue>
 
     <issue
@@ -15,8 +15,52 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/androidMain/AndroidManifest.xml"
-            line="10"
+            line="14"
             column="36"/>
+    </issue>
+
+    <issue
+        id="NotificationPermission"
+        message="When targeting Android 13 or higher, posting a permission requires holding the `POST_NOTIFICATIONS` permission"
+        errorLine1="        notificationManager.notify(NOTIFICATION_ID + fileName.hashCode(), notification)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/androidMain/kotlin/dev/advik/messagelogger/service/DeletedMediaNotificationService.kt"
+            line="54"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                backupFilePath = &quot;/data/data/dev.advik.messagelogger/files/WhatsAppBackup/IMG-20240101-WA0001.jpg&quot;,"
+        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/androidMain/kotlin/dev/advik/messagelogger/util/DemoData.kt"
+            line="95"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                backupFilePath = &quot;/data/data/dev.advik.messagelogger/files/WhatsAppBackup/IMG-20240102-WA0002.jpg&quot;,"
+        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/androidMain/kotlin/dev/advik/messagelogger/util/DemoData.kt"
+            line="103"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                backupFilePath = &quot;/data/data/dev.advik.messagelogger/files/WhatsAppBackup/IMG-20240103-WA0003.jpg&quot;,"
+        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/androidMain/kotlin/dev/advik/messagelogger/util/DemoData.kt"
+            line="113"
+            column="35"/>
     </issue>
 
     <issue
@@ -26,7 +70,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="21"
+            line="22"
             column="29"/>
     </issue>
 
@@ -36,7 +80,7 @@
         errorLine1="agp = &quot;8.2.2&quot;"
         errorLine2="      ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="2"
             column="7"/>
     </issue>
@@ -47,7 +91,7 @@
         errorLine1="agp = &quot;8.2.2&quot;"
         errorLine2="      ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="2"
             column="7"/>
     </issue>
@@ -58,7 +102,7 @@
         errorLine1="androidx-activity = &quot;1.8.2&quot;"
         errorLine2="                    ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="6"
             column="21"/>
     </issue>
@@ -69,7 +113,7 @@
         errorLine1="androidx-appcompat = &quot;1.6.1&quot;"
         errorLine2="                     ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="7"
             column="22"/>
     </issue>
@@ -80,7 +124,7 @@
         errorLine1="androidx-core = &quot;1.12.0&quot;"
         errorLine2="                ~~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="8"
             column="17"/>
     </issue>
@@ -91,7 +135,7 @@
         errorLine1="androidx-espresso = &quot;3.5.1&quot;"
         errorLine2="                    ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="9"
             column="21"/>
     </issue>
@@ -102,7 +146,7 @@
         errorLine1="androidx-lifecycle = &quot;2.7.0&quot;"
         errorLine2="                     ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="10"
             column="22"/>
     </issue>
@@ -113,7 +157,7 @@
         errorLine1="androidx-lifecycle = &quot;2.7.0&quot;"
         errorLine2="                     ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="10"
             column="22"/>
     </issue>
@@ -124,7 +168,7 @@
         errorLine1="androidx-testExt = &quot;1.1.5&quot;"
         errorLine2="                   ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="11"
             column="20"/>
     </issue>
@@ -135,7 +179,7 @@
         errorLine1="androidx-room = &quot;2.5.0&quot;"
         errorLine2="                ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="12"
             column="17"/>
     </issue>
@@ -146,7 +190,7 @@
         errorLine1="androidx-room = &quot;2.5.0&quot;"
         errorLine2="                ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="12"
             column="17"/>
     </issue>
@@ -157,7 +201,7 @@
         errorLine1="androidx-room = &quot;2.5.0&quot;"
         errorLine2="                ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="12"
             column="17"/>
     </issue>
@@ -168,7 +212,7 @@
         errorLine1="androidx-navigation = &quot;2.7.5&quot;"
         errorLine2="                      ~~~~~~~">
         <location
-            file="$HOME/work/MesssageLogger/MesssageLogger/gradle/libs.versions.toml"
+            file="../gradle/libs.versions.toml"
             line="13"
             column="23"/>
     </issue>
@@ -178,6 +222,17 @@
         message="This folder configuration (`v24`) is unnecessary; `minSdkVersion` is 24. Merge all the resources in this folder into `drawable`.">
         <location
             file="src/androidMain/res/drawable-v24"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `MediaDownloadManager` which has field `context` pointing to `Context`); this is a memory leak"
+        errorLine1="        @Volatile"
+        errorLine2="        ^">
+        <location
+            file="src/androidMain/kotlin/dev/advik/messagelogger/service/MediaDownloadManager.kt"
+            line="26"
+            column="9"/>
     </issue>
 
     <issue
@@ -209,7 +264,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="21"
+            line="22"
             column="29"/>
     </issue>
 

@@ -10,6 +10,7 @@ import dev.advik.messagelogger.data.repository.MessageLoggerRepository
 import dev.advik.messagelogger.data.entity.WhatsAppImageEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -110,7 +111,7 @@ class WhatsAppImageObserverService : Service() {
             }
 
             // Check if we already have this file
-            val existingImages = repository.getAllImages().value
+            val existingImages = repository.getAllImages().first()
             if (existingImages.any { it.originalFileName == fileName && !it.isDeleted }) {
                 Log.d(TAG, "File already exists in database: $fileName")
                 return

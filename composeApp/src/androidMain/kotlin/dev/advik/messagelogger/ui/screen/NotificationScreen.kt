@@ -119,14 +119,19 @@ fun NotificationScreen(
                                 },
                                 leadingIcon = {
                                     if (app.icon != null) {
-                                        try {
-                                            val bitmap = app.icon.toBitmap(48, 48)
+                                        val bitmap = try {
+                                            app.icon.toBitmap(48, 48)
+                                        } catch (e: Exception) {
+                                            null
+                                        }
+                                        
+                                        if (bitmap != null) {
                                             Image(
                                                 bitmap = bitmap.asImageBitmap(),
                                                 contentDescription = null,
                                                 modifier = Modifier.size(24.dp)
                                             )
-                                        } catch (e: Exception) {
+                                        } else {
                                             Icon(Icons.Default.Apps, contentDescription = null)
                                         }
                                     } else {
