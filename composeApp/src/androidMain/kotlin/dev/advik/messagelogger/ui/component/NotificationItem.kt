@@ -47,24 +47,23 @@ fun NotificationItem(
             },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            // App icon
-            AppIcon(
-                iconPath = notification.appIconPath,
-                packageName = notification.packageName,
-                modifier = Modifier.size(40.dp)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
+            // App header with icon - Always stays on top
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // App icon
+                AppIcon(
+                    iconPath = notification.appIconPath,
+                    packageName = notification.packageName,
+                    modifier = Modifier.size(40.dp)
+                )
+    
+                Spacer(modifier = Modifier.width(12.dp))
+    
                 // App name
                 Text(
                     text = notification.appName,
@@ -72,9 +71,32 @@ fun NotificationItem(
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
                 )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
+                
+                Spacer(modifier = Modifier.weight(1f))
+                
+                // Expand/Collapse icon - only show if notification text is long enough to be truncated
+                if (shouldShowExpandIcon) {
+                    IconButton(
+                        onClick = { isExpanded = !isExpanded },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (isExpanded) "Collapse" else "Expand",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Message content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 52.dp) // Align with the app icon
+            ) {
                 // Title
                 if (notification.title.isNotBlank()) {
                     Text(
@@ -105,19 +127,6 @@ fun NotificationItem(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
-            }
-            
-            // Expand/Collapse icon - only show if notification text is long enough to be truncated
-            if (shouldShowExpandIcon) {
-                IconButton(
-                    onClick = { isExpanded = !isExpanded }
-                ) {
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (isExpanded) "Collapse" else "Expand",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
     }

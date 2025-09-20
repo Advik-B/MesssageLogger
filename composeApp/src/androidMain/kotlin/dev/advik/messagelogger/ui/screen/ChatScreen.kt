@@ -1,8 +1,10 @@
 package dev.advik.messagelogger.ui.screen
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,24 +30,93 @@ fun ChatScreen(
 ) {
     val chatGroups by viewModel.chatGroups.collectAsStateWithLifecycle()
     val selectedChatGroup by viewModel.selectedChatGroup.collectAsStateWithLifecycle()
+    val selectedApp by viewModel.selectedApp.collectAsStateWithLifecycle()
+    val apps by viewModel.apps.collectAsStateWithLifecycle()
     
-    Row(modifier = modifier.fillMaxSize()) {
-        // Chat list sidebar
-        ChatListPanel(
-            chatGroups = chatGroups,
-            selectedChatGroup = selectedChatGroup,
-            onChatGroupSelected = viewModel::selectChatGroup,
-            modifier = Modifier.weight(1f)
-        )
+    Column(modifier = modifier.fillMaxSize()) {
+        // App selector
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Select App",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                ExposedDropdownMenuBox(
+                    expanded = false,
+                    onExpandedChange = {},
+                ) {
+                    OutlinedTextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        readOnly = true,
+                        value = apps.find { it.second == selectedApp }?.first ?: "All Apps",
+                        onValueChange = {},
+                        label = { Text("Filter by app") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) }
+                    )
+                    
+                    DropdownMenu(
+                        expanded = false,
+                        onDismissRequest = {},
+                        modifier = Modifier.exposedDropdownSize(true)
+                    ) {
+                        // Items will be added by the app selector component
+                    }
+                }
+                
+                // App selection chips as simple row since LazyRow is having issues
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    FilterChip(
+                        selected = selectedApp == null,
+                        onClick = { viewModel.selectApp(null) },
+                        label = { Text("All Apps") },
+                        leadingIcon = { Icon(Icons.Default.Apps, contentDescription = null) }
+                    )
+                    
+                    apps.forEach { (appName, packageName) ->
+                        FilterChip(
+                            selected = selectedApp == packageName,
+                            onClick = { viewModel.selectApp(packageName) },
+                            label = { Text(appName) }
+                        )
+                    }
+                }
+            }
+        }
         
-        // Chat messages panel
-        if (selectedChatGroup != null) {
-            ChatMessagesPanel(
-                chatGroup = selectedChatGroup!!,
-                modifier = Modifier.weight(2f)
+        // Chat interface
+        Row(modifier = Modifier.weight(1f)) {
+            // Chat list sidebar
+            ChatListPanel(
+                chatGroups = chatGroups,
+                selectedChatGroup = selectedChatGroup,
+                onChatGroupSelected = viewModel::selectChatGroup,
+                modifier = Modifier.weight(1f)
             )
-        } else {
-            EmptySelectionPanel(modifier = Modifier.weight(2f))
+            
+            // Chat messages panel
+            if (selectedChatGroup != null) {
+                ChatMessagesPanel(
+                    chatGroup = selectedChatGroup!!,
+                    modifier = Modifier.weight(2f)
+                )
+            } else {
+                EmptySelectionPanel(modifier = Modifier.weight(2f))
+            }
         }
     }
 }

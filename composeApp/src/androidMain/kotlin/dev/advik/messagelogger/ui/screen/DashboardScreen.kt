@@ -61,20 +61,10 @@ fun DashboardScreen(
         // Quick Actions
         item {
             QuickActionsSection(
-                onExportAll = { viewModel.exportMessage(/* dummy message for demo */ 
-                    dev.advik.messagelogger.data.entity.MessageEntity(
-                        id = 0,
-                        notificationId = 0,
-                        packageName = "",
-                        appName = "Export All",
-                        sender = "System",
-                        messageContent = "Export all data",
-                        timestamp = System.currentTimeMillis(),
-                        messageType = dev.advik.messagelogger.data.entity.MessageType.TEXT,
-                        chatIdentifier = null,
-                        key = "export_all"
-                    )
-                )},
+                onExportAll = { 
+                    // Use exportMessages to export all data instead of just a dummy message
+                    viewModel.exportMessages(dev.advik.messagelogger.data.entity.ExportFormat.JSON)
+                },
                 onClearOld = { /* TODO: Implement clear old messages */ }
             )
         }
