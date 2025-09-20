@@ -61,10 +61,10 @@ fun DashboardScreen(
         // Quick Actions
         item {
             QuickActionsSection(
-                onExportAll = { 
-                    // Use exportMessages to export all data instead of just a dummy message
-                    viewModel.exportMessages(dev.advik.messagelogger.data.entity.ExportFormat.JSON)
-                },
+                onExportJson = { viewModel.exportMessages(dev.advik.messagelogger.data.entity.ExportFormat.JSON) },
+                onExportCsv = { viewModel.exportMessages(dev.advik.messagelogger.data.entity.ExportFormat.CSV) },
+                onExportTxt = { viewModel.exportMessages(dev.advik.messagelogger.data.entity.ExportFormat.TXT) },
+                onExportHtml = { viewModel.exportMessages(dev.advik.messagelogger.data.entity.ExportFormat.HTML) },
                 onClearOld = { /* TODO: Implement clear old messages */ }
             )
         }
@@ -306,7 +306,10 @@ private fun RecentActivitySection(stats: dev.advik.messagelogger.ui.viewmodel.Me
 
 @Composable
 private fun QuickActionsSection(
-    onExportAll: () -> Unit,
+    onExportJson: () -> Unit,
+    onExportCsv: () -> Unit,
+    onExportTxt: () -> Unit,
+    onExportHtml: () -> Unit,
     onClearOld: () -> Unit
 ) {
     Card {
@@ -327,26 +330,83 @@ private fun QuickActionsSection(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Text(
+                text = "Export Data",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Export format buttons in a grid
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(
-                    onClick = onExportAll,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export All Data")
+                item {
+                    OutlinedButton(
+                        onClick = onExportJson,
+                        modifier = Modifier.width(100.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.DataObject, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("JSON", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
                 }
-                
-                OutlinedButton(
-                    onClick = onClearOld,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.CleaningServices, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Storage Cleanup")
+                item {
+                    OutlinedButton(
+                        onClick = onExportCsv,
+                        modifier = Modifier.width(100.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.TableChart, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("CSV", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
                 }
+                item {
+                    OutlinedButton(
+                        onClick = onExportTxt,
+                        modifier = Modifier.width(100.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("TXT", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+                item {
+                    OutlinedButton(
+                        onClick = onExportHtml,
+                        modifier = Modifier.width(100.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.Language, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("HTML", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            OutlinedButton(
+                onClick = onClearOld,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.CleaningServices, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Storage Cleanup")
+            }
             }
         }
     }

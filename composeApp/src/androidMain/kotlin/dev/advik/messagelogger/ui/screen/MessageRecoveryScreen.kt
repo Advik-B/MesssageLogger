@@ -33,16 +33,49 @@ fun MessageRecoveryScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val selectedApp by viewModel.selectedApp.collectAsStateWithLifecycle()
     val isSearchExpanded by viewModel.isSearchExpanded.collectAsStateWithLifecycle()
+    val exportStatus by viewModel.exportStatus.collectAsStateWithLifecycle()
     
     Column(modifier = modifier.fillMaxSize()) {
-        // Search and filter section (FREE - was premium feature)
+        // Export status feedback
+        exportStatus?.let { status ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        
+        // Search and filter section
         SearchAndFilterSection(
             searchQuery = searchQuery,
             onSearchQueryChange = viewModel::updateSearchQuery,
             selectedApp = selectedApp,
-            onAppSelected = viewModel::selectApp,
+            onAppSelected = viewModel::setSelectedApp,
             isSearchExpanded = isSearchExpanded,
-            onSearchExpandedChange = { expanded -> viewModel.toggleSearchExpanded() }
+            onSearchExpandedChange = { viewModel.toggleSearchExpanded() }
         )
         
         // Messages list

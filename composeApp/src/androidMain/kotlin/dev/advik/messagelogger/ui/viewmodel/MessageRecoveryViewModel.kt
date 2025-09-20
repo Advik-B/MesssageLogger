@@ -1,6 +1,9 @@
 package dev.advik.messagelogger.ui.viewmodel
 
 import android.app.Application
+import android.content.Intent
+import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.advik.messagelogger.data.repository.MessageLoggerRepository
@@ -8,6 +11,8 @@ import dev.advik.messagelogger.data.entity.MessageEntity
 import dev.advik.messagelogger.data.entity.ExportFormat
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,6 +33,9 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
     
     private val _isSearchExpanded = MutableStateFlow(false)
     val isSearchExpanded: StateFlow<Boolean> = _isSearchExpanded.asStateFlow()
+    
+    private val _exportStatus = MutableStateFlow<String?>(null)
+    val exportStatus: StateFlow<String?> = _exportStatus.asStateFlow()
     
     // Advanced search and filtering
     val messages: StateFlow<List<MessageEntity>> = combine(
@@ -87,24 +95,56 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
         _isSearchExpanded.value = !_isSearchExpanded.value
     }
     
-    // Export functionality - actually functional now
+    fun setSelectedApp(app: String?) {
+        _selectedApp.value = app
+    }
+    
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+    
+    // Export functionality - now with proper user feedback
     fun exportMessages(format: ExportFormat) {
         viewModelScope.launch {
             try {
-                when (format) {
+                _exportStatus.value = "Exporting ${format.name.lowercase()} file..."
+                
+                val filename = when (format) {
                     ExportFormat.JSON -> exportAsJson()
                     ExportFormat.CSV -> exportAsCsv()
                     ExportFormat.TXT -> exportAsTxt()
                     ExportFormat.HTML -> exportAsHtml()
                     ExportFormat.PDF -> exportAsPdf()
                 }
+                
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        getApplication(), 
+                        "Export completed: $filename", 
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                
+                _exportStatus.value = "Export completed: $filename"
+                
+                // Auto-clear status after 3 seconds
+                kotlinx.coroutines.delay(3000)
+                _exportStatus.value = null
+                
             } catch (e: Exception) {
-                // Handle export error - could emit to UI state
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        getApplication(), 
+                        "Export failed: ${e.message}", 
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                _exportStatus.value = "Export failed: ${e.message}"
             }
         }
     }
     
-    // Export individual message
+    // Export individual message with user feedback
     fun exportMessage(message: MessageEntity) {
         viewModelScope.launch {
             try {
@@ -126,124 +166,289 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
                     }
                 }
                 
-                saveToFile("message_${System.currentTimeMillis()}.txt", exportData)
+                val filename = "message_${System.currentTimeMillis()}.txt"
+                saveToFile(filename, exportData)
+                
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        getApplication(), 
+                        "Message exported: $filename", 
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                
             } catch (e: Exception) {
-                println("Export failed: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        getApplication(), 
+                        "Export failed: ${e.message}", 
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
     
-    // Share functionality
+    // Working share functionality
     fun shareMessage(message: MessageEntity) {
         viewModelScope.launch {
             try {
                 val shareText = buildString {
                     appendLine("Recovered message from ${message.appName}:")
                     appendLine("From: ${message.sender}")
-                    appendLine("${message.messageContent}")
+                    appendLine("Time: ${SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()).format(Date(message.timestamp))}")
+                    appendLine("")
+                    appendLine("\"${message.messageContent}\"")
                     if (message.isDeleted) {
+                        appendLine("")
                         appendLine("(This message was deleted)")
                     }
                 }
                 
-                // TODO: Implement actual share functionality
-                println("Share text: $shareText")
+                withContext(Dispatchers.Main) {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, shareText)
+                        putExtra(Intent.EXTRA_SUBJECT, "Recovered Message from ${message.appName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    
+                    getApplication<Application>().startActivity(
+                        Intent.createChooser(shareIntent, "Share Message").apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                    )
+                }
+                
             } catch (e: Exception) {
-                println("Share failed: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        getApplication(), 
+                        "Share failed: ${e.message}", 
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
     
-    private suspend fun exportAsJson() {
+    private suspend fun exportAsJson(): String {
         val messages = repository.getAllMessages().first()
         val json = buildString {
-            append("[\n")
+            append("{\n")
+            append("  \"exportInfo\": {\n")
+            append("    \"generatedAt\": \"${formatTimestamp(System.currentTimeMillis())}\",\n")
+            append("    \"totalMessages\": ${messages.size},\n")
+            append("    \"appName\": \"Message Logger\"\n")
+            append("  },\n")
+            append("  \"messages\": [\n")
             messages.forEachIndexed { index, message ->
-                append("  {\n")
-                append("    \"timestamp\": \"${formatTimestamp(message.timestamp)}\",\n")
-                append("    \"sender\": \"${escapeJson(message.sender)}\",\n")
-                append("    \"content\": \"${escapeJson(message.messageContent)}\",\n")
-                append("    \"app\": \"${escapeJson(message.appName)}\",\n")
-                append("    \"type\": \"${message.messageType}\",\n")
-                append("    \"deleted\": ${message.isDeleted}\n")
-                append("  }")
+                append("    {\n")
+                append("      \"id\": ${message.id},\n")
+                append("      \"timestamp\": \"${formatTimestamp(message.timestamp)}\",\n")
+                append("      \"sender\": \"${escapeJson(message.sender)}\",\n")
+                append("      \"content\": \"${escapeJson(message.messageContent)}\",\n")
+                append("      \"app\": \"${escapeJson(message.appName)}\",\n")
+                append("      \"packageName\": \"${escapeJson(message.packageName)}\",\n")
+                append("      \"type\": \"${message.messageType}\",\n")
+                append("      \"deleted\": ${message.isDeleted}")
+                if (message.isDeleted && message.deletedTimestamp != null) {
+                    append(",\n      \"deletedAt\": \"${formatTimestamp(message.deletedTimestamp!!)}\"\n")
+                } else {
+                    append("\n")
+                }
+                append("    }")
                 if (index < messages.size - 1) append(",")
                 append("\n")
             }
-            append("]")
+            append("  ]\n")
+            append("}")
         }
-        saveToFile("messages_export.json", json)
+        val filename = "messages_export_${System.currentTimeMillis()}.json"
+        saveToFile(filename, json)
+        return filename
     }
     
-    private suspend fun exportAsCsv() {
+    private suspend fun exportAsCsv(): String {
         val messages = repository.getAllMessages().first()
         val csv = buildString {
-            append("Timestamp,Sender,Content,App,Type,Deleted\n")
+            append("ID,Timestamp,Sender,Content,App,PackageName,Type,Deleted,DeletedAt\n")
             messages.forEach { message ->
+                append("\"${message.id}\",")
                 append("\"${formatTimestamp(message.timestamp)}\",")
                 append("\"${escapeCsv(message.sender)}\",")
                 append("\"${escapeCsv(message.messageContent)}\",")
                 append("\"${escapeCsv(message.appName)}\",")
+                append("\"${escapeCsv(message.packageName)}\",")
                 append("\"${message.messageType}\",")
-                append("\"${message.isDeleted}\"\n")
+                append("\"${message.isDeleted}\",")
+                append("\"${if (message.deletedTimestamp != null) formatTimestamp(message.deletedTimestamp!!) else ""}\"\n")
             }
         }
-        saveToFile("messages_export.csv", csv)
+        val filename = "messages_export_${System.currentTimeMillis()}.csv"
+        saveToFile(filename, csv)
+        return filename
     }
     
-    private suspend fun exportAsTxt() {
+    private suspend fun exportAsTxt(): String {
         val messages = repository.getAllMessages().first()
         val txt = buildString {
-            append("Message Export Report\n")
-            append("Generated: ${formatTimestamp(System.currentTimeMillis())}\n")
-            append("Total Messages: ${messages.size}\n\n")
-            append("=".repeat(50) + "\n\n")
+            appendLine("MESSAGE LOGGER - EXPORT REPORT")
+            appendLine("===============================")
+            appendLine("Generated: ${formatTimestamp(System.currentTimeMillis())}")
+            appendLine("Total Messages: ${messages.size}")
+            appendLine("Deleted Messages: ${messages.count { it.isDeleted }}")
+            appendLine("Apps: ${messages.map { it.appName }.distinct().joinToString(", ")}")
+            appendLine()
+            appendLine("=".repeat(50))
+            appendLine()
             
-            messages.forEach { message ->
-                append("[${formatTimestamp(message.timestamp)}] ")
-                append("${message.appName} - ${message.sender}\n")
-                append("${message.messageContent}\n")
-                if (message.isDeleted) append("*** DELETED MESSAGE ***\n")
-                append("-".repeat(30) + "\n\n")
+            messages.groupBy { it.appName }.forEach { (appName, appMessages) ->
+                appendLine("📱 $appName (${appMessages.size} messages)")
+                appendLine("-".repeat(40))
+                
+                appMessages.forEach { message ->
+                    appendLine()
+                    appendLine("🕐 ${formatTimestamp(message.timestamp)}")
+                    appendLine("👤 From: ${message.sender}")
+                    appendLine("📧 ${message.messageContent}")
+                    if (message.isDeleted) {
+                        appendLine("🗑️ *** DELETED MESSAGE ***")
+                        message.deletedTimestamp?.let {
+                            appendLine("   Deleted at: ${formatTimestamp(it)}")
+                        }
+                    }
+                    appendLine("📋 Type: ${message.messageType}")
+                }
+                appendLine()
+                appendLine("=".repeat(50))
+                appendLine()
             }
         }
-        saveToFile("messages_export.txt", txt)
+        val filename = "messages_export_${System.currentTimeMillis()}.txt"
+        saveToFile(filename, txt)
+        return filename
     }
     
-    private suspend fun exportAsHtml() {
+    private suspend fun exportAsHtml(): String {
         val messages = repository.getAllMessages().first()
         val html = buildString {
             append("""
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Message Export</title>
+                    <meta charset="UTF-8">
+                    <title>Message Logger - Export Report</title>
                     <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .message { border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 5px; }
-                        .deleted { background-color: #ffe6e6; }
-                        .timestamp { color: #666; font-size: 0.9em; }
-                        .sender { font-weight: bold; color: #333; }
-                        .app { color: #007bff; font-size: 0.9em; }
+                        body { 
+                            font-family: 'Segoe UI', Arial, sans-serif; 
+                            margin: 20px; 
+                            background-color: #f5f5f5; 
+                        }
+                        .header { 
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                            color: white; 
+                            padding: 20px; 
+                            border-radius: 10px; 
+                            margin-bottom: 20px; 
+                        }
+                        .stats { 
+                            display: flex; 
+                            gap: 20px; 
+                            margin-bottom: 20px; 
+                        }
+                        .stat-card { 
+                            background: white; 
+                            padding: 15px; 
+                            border-radius: 8px; 
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+                            flex: 1; 
+                        }
+                        .message { 
+                            background: white; 
+                            border-left: 4px solid #667eea; 
+                            margin: 10px 0; 
+                            padding: 15px; 
+                            border-radius: 0 8px 8px 0; 
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+                        }
+                        .deleted { 
+                            border-left-color: #e74c3c; 
+                            background-color: #fdf2f2; 
+                        }
+                        .timestamp { 
+                            color: #666; 
+                            font-size: 0.9em; 
+                            margin-bottom: 5px; 
+                        }
+                        .sender { 
+                            font-weight: bold; 
+                            color: #333; 
+                            margin-bottom: 5px; 
+                        }
+                        .app { 
+                            color: #007bff; 
+                            font-size: 0.85em; 
+                            background: #e3f2fd; 
+                            padding: 2px 8px; 
+                            border-radius: 12px; 
+                            display: inline-block; 
+                            margin-bottom: 10px; 
+                        }
+                        .content { 
+                            margin: 10px 0; 
+                            line-height: 1.5; 
+                        }
+                        .deleted-badge { 
+                            color: #e74c3c; 
+                            font-weight: bold; 
+                            font-size: 0.85em; 
+                        }
                     </style>
                 </head>
                 <body>
-                    <h1>Message Export Report</h1>
-                    <p>Generated: ${formatTimestamp(System.currentTimeMillis())}</p>
-                    <p>Total Messages: ${messages.size}</p>
-                    <hr>
+                    <div class="header">
+                        <h1>📱 Message Logger - Export Report</h1>
+                        <p>Generated: ${formatTimestamp(System.currentTimeMillis())}</p>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-card">
+                            <h3>📊 Total Messages</h3>
+                            <h2>${messages.size}</h2>
+                        </div>
+                        <div class="stat-card">
+                            <h3>🗑️ Deleted Messages</h3>
+                            <h2>${messages.count { it.isDeleted }}</h2>
+                        </div>
+                        <div class="stat-card">
+                            <h3>📱 Apps Monitored</h3>
+                            <h2>${messages.map { it.appName }.distinct().size}</h2>
+                        </div>
+                    </div>
             """.trimIndent())
             
-            messages.forEach { message ->
+            // Group messages by app for better organization
+            messages.groupBy { it.appName }.forEach { (appName, appMessages) ->
                 append("""
-                    <div class="message${if (message.isDeleted) " deleted" else ""}">
-                        <div class="timestamp">${formatTimestamp(message.timestamp)}</div>
-                        <div class="app">${message.appName}</div>
-                        <div class="sender">${message.sender}</div>
-                        <div class="content">${escapeHtml(message.messageContent)}</div>
-                        ${if (message.isDeleted) "<div style='color: red;'>*** DELETED MESSAGE ***</div>" else ""}
-                    </div>
+                    <h2>📱 $appName (${appMessages.size} messages)</h2>
                 """.trimIndent())
+                
+                appMessages.forEach { message ->
+                    append("""
+                        <div class="message${if (message.isDeleted) " deleted" else ""}">
+                            <div class="timestamp">🕐 ${formatTimestamp(message.timestamp)}</div>
+                            <div class="app">${escapeHtml(message.appName)}</div>
+                            <div class="sender">👤 ${escapeHtml(message.sender)}</div>
+                            <div class="content">💬 ${escapeHtml(message.messageContent)}</div>
+                            ${if (message.isDeleted) {
+                                val deletedAt = if (message.deletedTimestamp != null) 
+                                    " at ${formatTimestamp(message.deletedTimestamp!!)}" else ""
+                                "<div class=\"deleted-badge\">🗑️ DELETED MESSAGE$deletedAt</div>"
+                            } else ""}
+                        </div>
+                    """.trimIndent())
+                }
             }
             
             append("""
@@ -251,20 +456,37 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
                 </html>
             """.trimIndent())
         }
-        saveToFile("messages_export.html", html)
+        val filename = "messages_export_${System.currentTimeMillis()}.html"
+        saveToFile(filename, html)
+        return filename
     }
     
-    private suspend fun exportAsPdf() {
-        // For now, create a text-based PDF representation
-        // In a real implementation, you'd use a PDF library
-        exportAsTxt() // Fallback to text for now
+    private suspend fun exportAsPdf(): String {
+        // For now, create a formatted text-based PDF representation
+        // In a real implementation, you'd use a PDF library like iText
+        return exportAsTxt() // Fallback to text for now
     }
     
     private fun saveToFile(filename: String, content: String) {
-        val downloadsDir = File(getApplication<Application>().getExternalFilesDir(null), "exports")
-        downloadsDir.mkdirs()
-        val file = File(downloadsDir, filename)
-        file.writeText(content)
+        try {
+            // Use app-specific external directory for better compatibility
+            val app = getApplication<Application>()
+            val externalDir = app.getExternalFilesDir(null) ?: app.filesDir
+            val exportsDir = File(externalDir, "exports")
+            
+            if (!exportsDir.exists()) {
+                exportsDir.mkdirs()
+            }
+            
+            val file = File(exportsDir, filename)
+            file.writeText(content, Charsets.UTF_8)
+            
+            println("File saved successfully: ${file.absolutePath}")
+            
+        } catch (e: Exception) {
+            println("Failed to save file: ${e.message}")
+            throw e
+        }
     }
     
     private fun formatTimestamp(timestamp: Long): String {
