@@ -41,11 +41,6 @@ fun DashboardScreen(
             )
         }
         
-        // FREE Premium Status Banner
-        item {
-            PremiumStatusBanner()
-        }
-        
         // Statistics Cards
         item {
             StatisticsSection(messageStats)
@@ -151,7 +146,7 @@ private fun StatisticsSection(stats: dev.advik.messagelogger.ui.viewmodel.Messag
                         icon = Icons.Default.Message,
                         title = "Total Recovered",
                         value = stats.totalRecovered.toString(),
-                        subtitle = "FREE: Unlimited recovery"
+                        subtitle = "Messages recovered"
                     )
                 }
                 item {
@@ -237,13 +232,6 @@ private fun AppBreakdownSection(appBreakdown: Map<String, Int>) {
             }
             
             Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "FREE: Multi-app monitoring (was premium feature)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
             Spacer(modifier = Modifier.height(16.dp))
             
             appBreakdown.forEach { (appName, count) ->
@@ -358,7 +346,7 @@ private fun QuickActionsSection(
                 ) {
                     Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export All Data (FREE)")
+                    Text("Export All Data")
                 }
                 
                 OutlinedButton(

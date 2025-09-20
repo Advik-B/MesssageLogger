@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -19,11 +20,13 @@ import dev.advik.messagelogger.ui.screen.NotificationScreen
 import dev.advik.messagelogger.ui.screen.PermissionScreen
 import dev.advik.messagelogger.ui.screen.WhatsAppImageScreen
 import dev.advik.messagelogger.ui.screen.MessageRecoveryScreen
+import dev.advik.messagelogger.ui.screen.ChatScreen
 import dev.advik.messagelogger.ui.screen.DashboardScreen
 import dev.advik.messagelogger.ui.screen.SettingsScreen
 import dev.advik.messagelogger.ui.viewmodel.NotificationViewModel
 import dev.advik.messagelogger.ui.viewmodel.WhatsAppImageViewModel
 import dev.advik.messagelogger.ui.viewmodel.MessageRecoveryViewModel
+import dev.advik.messagelogger.ui.viewmodel.ChatViewModel
 import dev.advik.messagelogger.ui.viewmodel.SettingsViewModel
 import dev.advik.messagelogger.util.DemoData
 
@@ -66,8 +69,7 @@ private fun MainNavigation(
                     Text(
                         text = when (currentRoute) {
                             "dashboard" -> "Dashboard"
-                            "recovery" -> "Message Recovery"
-                            "notifications" -> "All Notifications"
+                            "chat" -> "Conversations"
                             "images" -> "WhatsApp Images"
                             "settings" -> "Settings"
                             else -> "Message Logger"
@@ -93,13 +95,13 @@ private fun MainNavigation(
                     }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
-                    label = { Text("Recovery") },
-                    selected = currentRoute == "recovery",
+                    icon = { Icon(Icons.Default.Chat, contentDescription = null) },
+                    label = { Text("Chat") },
+                    selected = currentRoute == "chat",
                     onClick = {
-                        currentRoute = "recovery"
-                        navController.navigate("recovery") {
-                            popUpTo("recovery") { inclusive = true }
+                        currentRoute = "chat"
+                        navController.navigate("chat") {
+                            popUpTo("chat") { inclusive = true }
                         }
                     }
                 )
@@ -140,18 +142,11 @@ private fun MainNavigation(
                 DashboardScreen(viewModel = viewModel)
             }
             
-            composable("recovery") {
-                val viewModel = viewModel<MessageRecoveryViewModel> {
-                    MessageRecoveryViewModel()
+            composable("chat") {
+                val viewModel = viewModel<ChatViewModel> {
+                    ChatViewModel(application = LocalContext.current.applicationContext as android.app.Application)
                 }
-                MessageRecoveryScreen(viewModel = viewModel)
-            }
-            
-            composable("notifications") {
-                val viewModel = viewModel<NotificationViewModel> {
-                    NotificationViewModel()
-                }
-                NotificationScreen(viewModel = viewModel)
+                ChatScreen(viewModel = viewModel)
             }
             
             composable("images") {

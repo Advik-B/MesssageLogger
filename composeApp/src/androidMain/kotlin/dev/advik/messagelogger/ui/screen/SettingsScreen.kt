@@ -117,7 +117,7 @@ private fun MonitoredAppsSection(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "FREE: Monitor all supported messaging apps (no restrictions)",
+                text = "Monitor all supported messaging apps",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -209,7 +209,7 @@ private fun StorageSection(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = if (retentionDays == -1) "FREE: Unlimited retention (no 7-day limit)" 
+                    text = if (retentionDays == -1) "Unlimited retention" 
                           else "Keep messages for $retentionDays days",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -360,7 +360,7 @@ private fun ExportSection(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "FREE: Export in multiple formats (was premium feature)",
+                text = "Export in multiple formats",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -421,7 +421,7 @@ private fun KeywordFiltersSection(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "FREE: Filter messages by keywords (was premium feature)",
+                text = "Filter messages by keywords",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
