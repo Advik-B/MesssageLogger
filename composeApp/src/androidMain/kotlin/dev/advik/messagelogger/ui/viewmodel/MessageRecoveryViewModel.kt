@@ -297,6 +297,98 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = MessageStats()
     )
+    
+    // Export functionality
+    fun exportMessage(format: ExportFormat) {
+        viewModelScope.launch {
+            try {
+                val currentMessages = messages.value
+                val file = when (format) {
+                    ExportFormat.JSON -> exportToJson(currentMessages)
+                    ExportFormat.CSV -> exportToCsv(currentMessages)
+                    ExportFormat.TXT -> exportToTxt(currentMessages)
+                    ExportFormat.HTML -> exportToHtml(currentMessages)
+                    ExportFormat.PDF -> exportToTxt(currentMessages) // Fallback to text
+                }
+                // Handle success (could show toast or notification)
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+    
+    fun shareMessage(message: MessageEntity) {
+        // Implementation for sharing individual messages
+    }
+    
+    fun setSelectedApp(app: String?) {
+        _selectedApp.value = app
+    }
+    
+    fun toggleSearchExpansion() {
+        _isSearchExpanded.value = !_isSearchExpanded.value
+    }
+    
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+    
+    private suspend fun exportToJson(messages: List<MessageEntity>): File {
+        val exportDir = File(getApplication<Application>().getExternalFilesDir(null), "exports")
+        exportDir.mkdirs()
+        val file = File(exportDir, "messages_${System.currentTimeMillis()}.json")
+        file.writeText(messages.toString()) // Simple implementation
+        return file
+    }
+    
+    private suspend fun exportToCsv(messages: List<MessageEntity>): File {
+        val exportDir = File(getApplication<Application>().getExternalFilesDir(null), "exports")
+        exportDir.mkdirs()
+        val file = File(exportDir, "messages_${System.currentTimeMillis()}.csv")
+        val csv = StringBuilder("Sender,Content,Timestamp,Deleted\n")
+        messages.forEach { message ->
+            csv.append("${message.sender},${message.messageContent},${message.timestamp},${message.isDeleted}\n")
+        }
+        file.writeText(csv.toString())
+        return file
+    }
+    
+    private suspend fun exportToTxt(messages: List<MessageEntity>): File {
+        val exportDir = File(getApplication<Application>().getExternalFilesDir(null), "exports")
+        exportDir.mkdirs()
+        val file = File(exportDir, "messages_${System.currentTimeMillis()}.txt")
+        val txt = StringBuilder()
+        messages.forEach { message ->
+            txt.append("From: ${message.sender}\n")
+            txt.append("Content: ${message.messageContent}\n")
+            txt.append("Time: ${Date(message.timestamp)}\n")
+            txt.append("Deleted: ${message.isDeleted}\n")
+            txt.append("---\n")
+        }
+        file.writeText(txt.toString())
+        return file
+    }
+    
+    private suspend fun exportToHtml(messages: List<MessageEntity>): File {
+        val exportDir = File(getApplication<Application>().getExternalFilesDir(null), "exports")
+        exportDir.mkdirs()
+        val file = File(exportDir, "messages_${System.currentTimeMillis()}.html")
+        val html = buildString {
+            append("<!DOCTYPE html><html><body>")
+            append("<h1>Exported Messages</h1>")
+            messages.forEach { message ->
+                append("<div style='border:1px solid #ccc; margin:10px; padding:10px;'>")
+                append("<strong>From:</strong> ${message.sender}<br>")
+                append("<strong>Content:</strong> ${message.messageContent}<br>")
+                append("<strong>Time:</strong> ${Date(message.timestamp)}<br>")
+                append("<strong>Deleted:</strong> ${message.isDeleted}")
+                append("</div>")
+            }
+            append("</body></html>")
+        }
+        file.writeText(html)
+        return file
+    }
 }
 
 data class MessageStats(
