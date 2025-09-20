@@ -1,5 +1,8 @@
 package dev.advik.messagelogger.ui.screen
 
+import android.content.Intent
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -10,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +30,41 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val messageStats by viewModel.messageStats.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var saveFileActivityLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                viewModel.saveToUri(uri)
+            } ?: run {
+                viewModel.cancelSaveToFile()
+                Toast.makeText(context, "Save cancelled", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            viewModel.cancelSaveToFile()
+            Toast.makeText(context, "Save cancelled", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    // Collect the save file request
+    LaunchedEffect(viewModel) {
+        viewModel.saveFileRequest.collect { (filename, _) ->
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = when {
+                    filename.endsWith(".json") -> "application/json"
+                    filename.endsWith(".csv") -> "text/csv"
+                    filename.endsWith(".txt") -> "text/plain"
+                    filename.endsWith(".html") -> "text/html"
+                    filename.endsWith(".pdf") -> "application/pdf"
+                    else -> "*/*"
+                }
+                putExtra(Intent.EXTRA_TITLE, filename)
+            }
+            saveFileActivityLauncher.launch(intent)
+        }
+    }
     
     LazyColumn(
         modifier = modifier
@@ -406,7 +445,6 @@ private fun QuickActionsSection(
                 Icon(Icons.Default.CleaningServices, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Storage Cleanup")
-            }
             }
         }
     }

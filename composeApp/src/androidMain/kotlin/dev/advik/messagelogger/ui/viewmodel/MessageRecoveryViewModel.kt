@@ -2,6 +2,7 @@ package dev.advik.messagelogger.ui.viewmodel
 
 import android.app.Application
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
@@ -99,11 +100,7 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
         _selectedApp.value = app
     }
     
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
-    
-    // Export functionality - now with proper user feedback
+    // Export functionality - now with proper user feedback and save dialog
     fun exportMessages(format: ExportFormat) {
         viewModelScope.launch {
             try {
@@ -117,19 +114,10 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
                     ExportFormat.PDF -> exportAsPdf()
                 }
                 
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        getApplication(), 
-                        "Export completed: $filename", 
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                _exportStatus.value = "Choose where to save the file..."
                 
-                _exportStatus.value = "Export completed: $filename"
-                
-                // Auto-clear status after 3 seconds
-                kotlinx.coroutines.delay(3000)
-                _exportStatus.value = null
+                // The actual saving will happen when the user selects a location
+                // and the saveToUri method is called from the UI
                 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -467,25 +455,79 @@ class MessageRecoveryViewModel(application: Application) : AndroidViewModel(appl
         return exportAsTxt() // Fallback to text for now
     }
     
+    // Store exported content temporarily
+    private var pendingExport: Pair<String, String>? = null
+    
+    // MutableSharedFlow to signal that we're ready to save a file with a given name and content
+    private val _saveFileRequest = MutableSharedFlow<Pair<String, String>>()
+    val saveFileRequest: SharedFlow<Pair<String, String>> = _saveFileRequest
+    
     private fun saveToFile(filename: String, content: String) {
-        try {
-            // Use app-specific external directory for better compatibility
-            val app = getApplication<Application>()
-            val externalDir = app.getExternalFilesDir(null) ?: app.filesDir
-            val exportsDir = File(externalDir, "exports")
-            
-            if (!exportsDir.exists()) {
-                exportsDir.mkdirs()
+        // Store the content to be saved temporarily
+        pendingExport = Pair(filename, content)
+        
+        // Emit a request to open the file picker
+        viewModelScope.launch {
+            _saveFileRequest.emit(Pair(filename, content))
+        }
+    }
+    
+    /**
+     * Write the exported content to the user-selected URI
+     * This should be called from the UI layer after the user selects a location
+     */
+    fun saveToUri(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val (filename, content) = pendingExport ?: throw IllegalStateException("No pending export")
+                
+                _exportStatus.value = "Saving file..."
+                
+                getApplication<Application>().contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(content.toByteArray(Charsets.UTF_8))
+                    outputStream.flush()
+                }
+                
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        getApplication(),
+                        "File saved successfully: $filename",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                
+                _exportStatus.value = "Export completed: $filename"
+                
+                // Auto-clear status after 3 seconds
+                kotlinx.coroutines.delay(3000)
+                _exportStatus.value = null
+                
+                // Clear the pending export
+                pendingExport = null
+                
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        getApplication(),
+                        "Failed to save file: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                _exportStatus.value = "Export failed: ${e.message}"
+                throw e
             }
-            
-            val file = File(exportsDir, filename)
-            file.writeText(content, Charsets.UTF_8)
-            
-            println("File saved successfully: ${file.absolutePath}")
-            
-        } catch (e: Exception) {
-            println("Failed to save file: ${e.message}")
-            throw e
+        }
+    }
+    
+    /**
+     * Fallback for when the user cancels the file selection
+     */
+    fun cancelSaveToFile() {
+        pendingExport = null
+        viewModelScope.launch {
+            _exportStatus.value = "Export cancelled"
+            kotlinx.coroutines.delay(2000)
+            _exportStatus.value = null
         }
     }
     
